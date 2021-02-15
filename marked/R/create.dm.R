@@ -1,15 +1,15 @@
 #' Creates a design matrix for a parameter
-#' 
+#'
 #' Creates a design matrix using the design dataframe, a formula and any
 #' intervals defined for time, cohort and age.
-#' 
+#'
 #' @aliases create.dm create.dml
-#' @usage create.dm(x, formula, time.bins=NULL, cohort.bins=NULL, age.bins=NULL, 
+#' @usage create.dm(x, formula, time.bins=NULL, cohort.bins=NULL, age.bins=NULL,
 #'                   chunk_size=1e7, remove.intercept=NULL,remove.unused.columns=TRUE)
-#'        
+#'
 #'        create.dml(ddl,model.parameters,design.parameters,restrict=FALSE,
 #'              chunk_size=1e7,use.admb=FALSE,remove.unused.columns=TRUE,simplify=FALSE)
-#' 
+#'
 #' @param x design dataframe created by \code{\link{create.dmdf}}
 #' @param formula formula for model in R format
 #' @param time.bins any bins of time to collapse values
@@ -23,7 +23,7 @@
 #' type; if NULL it is created
 #' @param design.parameters Specification of any grouping variables for design
 #' data for each parameter
-#' @param model.parameters List of model parameter specifications 
+#' @param model.parameters List of model parameter specifications
 #' @param restrict if TRUE, only use design data with Time >= Cohort
 #' @param use.admb if TRUE uses mixed.model.admb for random effects; otherwise mixed.model
 #' @param remove.unused.columns if TRUE, unused columns are removed; otherwise they are left
@@ -33,18 +33,18 @@
 #' for each parameter with a sub-list for the fixed effect (fe) and random effects. The re structure depends
 #' on switch use.admb. When TRUE, it contains a single design matrix (re.dm) and indices for random effects (re.indices).
 #' When FALSE, it returns re.list which is a list with an element for each random component containing re.dm and indices for
-#' that random effect (eg (1|id) + (1|time) would produce elements for id and time. 
-#' 
+#' that random effect (eg (1|id) + (1|time) would produce elements for id and time.
+#'
 #' @author Jeff Laake
 create.dm=function(x, formula, time.bins=NULL, cohort.bins=NULL, age.bins=NULL, chunk_size=1e7, remove.intercept=NULL, remove.unused.columns=TRUE)
 ##############################################################################
 # create.dm - create design matrix with nch*(nocc-1) rows
 #             where nch is number of capture histories and nocc is number of
-#             occasions. 
+#             occasions.
 #
 # Arguments:
 #
-#    x              - design matrix dataframe created by create.dmdf 
+#    x              - design matrix dataframe created by create.dmdf
 #    formula        - formula for parameter
 #    time.bins      - bins for times to reduce number of parameters by collapsing
 #    cohort.bins    - bins for cohorts to reduce number of parameters by collapsing
@@ -58,7 +58,7 @@ create.dm=function(x, formula, time.bins=NULL, cohort.bins=NULL, age.bins=NULL, 
 {
    if(!is.null(time.bins))
    {
-      factime=factor(cut(as.numeric(levels(x$time)[x$time]),time.bins,include.lowest=TRUE))  
+      factime=factor(cut(as.numeric(levels(x$time)[x$time]),time.bins,include.lowest=TRUE))
       if(any(is.na(factime)))
          stop(paste("Time bins do not span all values. Min time:", min(as.numeric(levels(x$time))),
            "Max time:", max(as.numeric(levels(x$time)))))
@@ -68,7 +68,7 @@ create.dm=function(x, formula, time.bins=NULL, cohort.bins=NULL, age.bins=NULL, 
    }
    if(!is.null(cohort.bins))
    {
-      faccohort=factor(cut(as.numeric(levels(x$cohort)[x$cohort]),cohort.bins,include.lowest=TRUE))  
+      faccohort=factor(cut(as.numeric(levels(x$cohort)[x$cohort]),cohort.bins,include.lowest=TRUE))
       if(any(is.na(faccohort)))
          stop(paste("Cohort bins do not span all values. Min cohort:", min(as.numeric(levels(x$cohort))),
            "Max cohort:", max(as.numeric(levels(x$cohort)))))
@@ -78,7 +78,7 @@ create.dm=function(x, formula, time.bins=NULL, cohort.bins=NULL, age.bins=NULL, 
    }
    if(!is.null(age.bins))
    {
-      facage=factor(cut(as.numeric(levels(x$age)[x$age]),age.bins,include.lowest=TRUE))  
+      facage=factor(cut(as.numeric(levels(x$age)[x$age]),age.bins,include.lowest=TRUE))
       if(any(is.na(facage)))
          stop(paste("Age bins do not span all values. Min age:", min(as.numeric(levels(x$age))),
            "Max age:", max(as.numeric(levels(x$age)))))
@@ -105,13 +105,13 @@ create.dm=function(x, formula, time.bins=NULL, cohort.bins=NULL, age.bins=NULL, 
    {
       for(i in 1:pieces)
 	  {
-		  
+
 		  lower=(i-1)*rows_in_piece+1
 		  upper=i*rows_in_piece
 		  if(upper>nrow(x))upper=nrow(x)
 		  if(i==1)
 		  {
-			  dm=as(model.matrix(formula,x[lower:upper,,drop=FALSE]),"sparseMatrix") 
+			  dm=as(model.matrix(formula,x[lower:upper,,drop=FALSE]),"sparseMatrix")
 			  if(!is.null(x$fix)&&any(!is.na(x$fix)))
 				  dm[!is.na(x$fix[lower:upper]),]=0
 			  drop=apply(dm,2,function(x) all(x==0))
@@ -138,17 +138,17 @@ create.dm=function(x, formula, time.bins=NULL, cohort.bins=NULL, age.bins=NULL, 
 		   if(!is.null(x$fix)&&any(!is.na(x$fix)))
 			   dm1[!is.na(x$fix[(upper+1):nrow(x)]),]=0
 		   drop=drop&apply(dm1,2,function(x) all(x==0))
-		   dm=rbind(dm,dm1) 
+		   dm=rbind(dm,dm1)
 	   }
-#   dm[(upper+1):nrow(x),]=as(model.matrix(formula,x[(upper+1):nrow(x),,drop=FALSE]),"sparseMatrix")    
-   colnames(dm)=colnames(mm)
+#   dm[(upper+1):nrow(x),]=as(model.matrix(formula,x[(upper+1):nrow(x),,drop=FALSE]),"sparseMatrix")
+   #colnames(dm)=colnames(mm)
 #  Remove any unused columns; this is slower but uses less memory
    if(remove.unused.columns)
    {
 #	   select=vector("logical",length=npar)
 #	   for (i in 1:npar)
 #		   select[i]=any(dm[,i]!=0)
-	   if(!is.null(remove.intercept)&&remove.intercept)drop[1]=TRUE 
+	   if(!is.null(remove.intercept)&&remove.intercept)drop[1]=TRUE
 #      Return dm with selected columns
        return(dm[,!drop,drop=FALSE])
 #	   return(dm[,select,drop=FALSE])
@@ -183,7 +183,7 @@ create.dml=function(ddl,model.parameters,design.parameters,restrict=FALSE,chunk_
 #			{
 #				dml[[i]]$indices=realign.pims(dml[[i]]$fe)
 #				dml[[i]]$fe=dml[[i]]$fe[dml[[i]]$indices,,drop=FALSE]
-#			} 
+#			}
 			# if some reals are fixed, assign 0 to rows of dm and then
 			# remove any columns (parameters) that are all 0.
 #			if(!is.null(dd$fix)&&any(!is.na(dd$fix)))
@@ -195,7 +195,7 @@ create.dml=function(ddl,model.parameters,design.parameters,restrict=FALSE,chunk_
 #			    for(j in 1:ncol(dml[[i]]$fe))
 #					drop[j]=all(dml[[i]]$fe[,j]==0)
 #				dml[[i]]$fe=dml[[i]]$fe[,!drop,drop=FALSE]
-#				
+#
 #				dml[[i]]$fe=dml[[i]]$fe[,apply(dml[[i]]$fe,2,function(x) any(x!=0)),drop=FALSE]
 #			}
 			if(!is.null(mlist$re.model))
@@ -204,7 +204,7 @@ create.dml=function(ddl,model.parameters,design.parameters,restrict=FALSE,chunk_
 					dml[[i]]$re=mixed.model.admb(model.parameters[[i]]$formula,dd)
 				else
 					dml[[i]]$re=mixed.model(model.parameters[[i]]$formula,dd)
-			}	
+			}
 		} else
 			if(!is.null(dd))
 			   dml[[i]]=list(fe=matrix(NA,nrow=nrow(dd),ncol=0),re=NULL)
